@@ -20,10 +20,10 @@ Node.js 18+ · TypeScript · Express · Prisma ORM · PostgreSQL · Zod · Vites
 
 ### Opção A — Docker (recomendado)
 
-```bash
+
 cp .env.example .env
 docker compose up --build
-```
+
 Esse comando sobe o Postgres de desenvolvimento, o Postgres de teste, aplica as migrations e inicia a API — tudo em um passo.
 
 - API: http://localhost:3000
@@ -35,14 +35,14 @@ Para parar: `docker compose down` (adicione `-v` para também apagar os dados).
 
 Pré-requisito: PostgreSQL rodando na máquina.
 
-```bash
+
 npm install
 cp .env.example .env          # ajuste a DATABASE_URL se necessário
 createdb ecommerce            # se o banco ainda não existir
 npx prisma generate
 npx prisma migrate dev
 npm run dev
-```
+
 
 ---
 
@@ -59,12 +59,12 @@ As migrations já estão versionadas em `prisma/migrations/` — não é preciso
 
 Testes de integração rodam contra um **Postgres real**, isolado do banco de desenvolvimento (porta `5433`, banco `ecommerce_test`).
 
-```bash
+
 cp .env.test.example .env.test
-docker compose up -d db-test          # ou crie o banco manualmente se estiver sem Docker
+docker compose up -d db-test  # ou crie o banco manualmente se estiver sem Docker
 npx dotenv -e .env.test -- npx prisma migrate deploy
 npm run test:integration
-```
+
 
 > O código de teste recusa rodar se a `DATABASE_URL` não apontar para um banco de teste — proteção contra apagar dados de desenvolvimento por engano.
 
@@ -78,12 +78,12 @@ npm run test:integration
 
 ## Exemplos
 
-```bash
+
 curl -X POST http://localhost:3000/categories -H 'Content-Type: application/json' -d '{"name":"Electronics"}'
 
 curl -X POST http://localhost:3000/products -H 'Content-Type: application/json' \
   -d '{"name":"Laptop","price":999.99,"stock":10,"categoryId":"<category-id>"}'
-```
+
 
 ## Observações
 - O `.env` real nunca é commitado — só `.env.example` e `.env.test.example`.
