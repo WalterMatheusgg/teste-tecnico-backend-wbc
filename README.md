@@ -1,4 +1,4 @@
-````md
+````
 # E-commerce Backend API
 
 API REST para gerenciamento de categorias e produtos, construída com Node.js 18+, TypeScript, Express, Prisma ORM e PostgreSQL.
@@ -313,5 +313,3 @@ npm run test:integration
 * Os testes usam PostgreSQL real, sem mock do Prisma.
 * O banco de teste é separado do banco de desenvolvimento.
 * O projeto utiliza soft delete com `deletedAt`.
-
-```
