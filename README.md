@@ -1,4 +1,4 @@
-````
+
 # E-commerce Backend API
 
 API REST para gerenciamento de categorias e produtos, construída com Node.js 18+, TypeScript, Express, Prisma ORM e PostgreSQL.
