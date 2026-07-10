@@ -1,133 +1,317 @@
+````md
 # E-commerce Backend API
 
 API REST para gerenciamento de categorias e produtos, construída com Node.js 18+, TypeScript, Express, Prisma ORM e PostgreSQL.
 
 ## Tecnologias
+
 Node.js 18+ · TypeScript · Express · Prisma ORM · PostgreSQL · Zod · Vitest + Supertest · Swagger/OpenAPI · Docker Compose
 
 ## Arquitetura
-`routes` → `controllers` → `services` → `repositories`, com validação via `schemas` (Zod) e tratamento de erro centralizado em `middlewares`. O `repository` é o único ponto de acesso ao Prisma.
+
+O projeto segue uma arquitetura em camadas:
+
+`routes` → `controllers` → `services` → `repositories`
+
+As validações são feitas com Zod em `schemas`, e o tratamento de erros é centralizado em `middlewares`.
+
+O `repository` é o único ponto de acesso direto ao Prisma.
 
 ## Regras de negócio
-- Categoria: nome obrigatório e único, soft delete.
-- Produto: preço > 0, estoque ≥ 0, categoria obrigatória e existente.
+
+- Categoria possui nome obrigatório e único.
+- Produto possui preço maior que zero.
+- Produto possui estoque inteiro e não negativo.
+- Produto deve estar vinculado a uma categoria existente.
 - Categoria com produtos ativos vinculados não pode ser excluída.
-- Registros com `deletedAt` preenchido são ignorados nas listagens/buscas.
+- A exclusão é feita com soft delete.
+- Registros com `deletedAt` preenchido são ignorados em listagens e buscas comuns.
 
 ---
 
 ## Como rodar
 
-### Opção A — Docker (recomendado)
+### Opção A: Docker
+
+Forma recomendada para executar o projeto.
 
 ```bash
 cp .env.example .env
 docker compose up --build
+````
+
+Esse comando sobe:
+
+* API
+* PostgreSQL de desenvolvimento
+* PostgreSQL de teste
+* migrations do Prisma
+* aplicação em modo desenvolvimento
+
+A API ficará disponível em:
+
+```txt
+http://localhost:3000
 ```
 
-Esse comando sobe o Postgres de desenvolvimento, o Postgres de teste, aplica as migrations e inicia a API — tudo em um passo.
+Swagger:
 
-- API: http://localhost:3000
-- Swagger: http://localhost:3000/docs
+```txt
+http://localhost:3000/docs/
+```
 
-Para parar: `docker compose down` (adicione `-v` para também apagar os dados).
+Para parar os containers:
 
-### Opção B — Local, sem Docker
+```bash
+docker compose down
+```
 
-Pré-requisito: PostgreSQL rodando na máquina.
+Para parar os containers e apagar os volumes do banco:
+
+```bash
+docker compose down -v
+```
+
+---
+
+### Opção B: Local sem Docker
+
+Pré-requisitos:
+
+* Node.js 18+
+* PostgreSQL rodando localmente
+* Banco `ecommerce` criado no PostgreSQL
+
+Instale as dependências:
 
 ```bash
 npm install
-cp .env.example .env          # ajuste a DATABASE_URL se necessário
-createdb ecommerce            # se o banco ainda não existir
-npx prisma generate
-npx prisma migrate dev
+```
+
+Crie o arquivo de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+Ajuste a `DATABASE_URL` no `.env`, se necessário:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ecommerce?schema=public
+```
+
+Se o banco ainda não existir, crie com:
+
+```bash
+createdb ecommerce
+```
+
+Gere o Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+Aplique as migrations:
+
+```bash
+npm run prisma:migrate
+```
+
+Inicie a aplicação:
+
+```bash
 npm run dev
 ```
 
+A API ficará disponível em:
+
+```txt
+http://localhost:3000
+```
 
 ---
 
 ## Migrations
 
-As migrations já estão versionadas em `prisma/migrations/` — não é preciso criar novas.
+As migrations já estão versionadas em `prisma/migrations`.
 
-- `npx prisma migrate dev` → uso local
-- `npx prisma migrate deploy` → teste/CI/produção (só aplica migrations existentes; o Docker Compose já faz isso automaticamente)
+Para aplicar migrations existentes:
+
+```bash
+npm run prisma:migrate
+```
+
+Para criar/aplicar migrations durante desenvolvimento:
+
+```bash
+npm run prisma:migrate:dev
+```
+
+Para gerar o Prisma Client:
+
+```bash
+npm run prisma:generate
+```
 
 ---
 
 ## Testes
 
-Testes de integração rodam contra um **Postgres real**, isolado do banco de desenvolvimento (porta `5433`, banco `ecommerce_test`).
+Os testes de integração rodam contra um PostgreSQL real, isolado do banco de desenvolvimento.
+
+Banco de teste:
+
+```txt
+ecommerce_test
+```
+
+Porta:
+
+```txt
+5433
+```
+
+Crie o arquivo `.env.test`:
 
 ```bash
 cp .env.test.example .env.test
-docker compose up -d db-test  # ou crie o banco manualmente se estiver sem Docker
-npx dotenv -e .env.test -- npx prisma migrate deploy
+```
+
+Suba o banco de teste:
+
+```bash
+docker compose up -d db-test
+```
+
+Aplique as migrations no banco de teste:
+
+```bash
+npm run prisma:migrate:test
+```
+
+Execute os testes de integração:
+
+```bash
 npm run test:integration
 ```
 
-
-> O código de teste recusa rodar se a `DATABASE_URL` não apontar para um banco de teste — proteção contra apagar dados de desenvolvimento por engano.
+O código de teste recusa rodar caso a `DATABASE_URL` não aponte para um banco de teste. Essa proteção evita sobrescrever ou limpar dados do banco de desenvolvimento por engano.
 
 ---
 
 ## Endpoints
 
-**Categories:** `POST` `/categories` · `GET` `/categories?page=&limit=` · `GET` `/categories/:id` · `PUT` `/categories/:id` · `DELETE` `/categories/:id`
+### Categories
 
-**Products:** `POST` `/products` · `GET` `/products?page=&limit=&categoryId=&priceMin=&priceMax=&name=` · `GET` `/products/:id` · `PUT` `/products/:id` · `DELETE` `/products/:id`
+* `POST /categories`
+* `GET /categories?page=&limit=`
+* `GET /categories/:id`
+* `PUT /categories/:id`
+* `DELETE /categories/:id`
 
-## Exemplos
+### Products
+
+* `POST /products`
+* `GET /products?page=&limit=&categoryId=&priceMin=&priceMax=&name=`
+* `GET /products/:id`
+* `PUT /products/:id`
+* `DELETE /products/:id`
+
+---
+
+## Exemplos de chamadas
+
+### Criar categoria
 
 ```bash
-curl -X POST http://localhost:3000/categories -H 'Content-Type: application/json' -d '{"name":"Electronics"}'
+curl -X POST http://localhost:3000/categories \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Electronics"}'
 ```
 
+### Criar produto
+
+Substitua `<category-id>` pelo ID de uma categoria existente.
+
 ```bash
-curl -X POST http://localhost:3000/products -H 'Content-Type: application/json' \
-  -d '{"name":"Laptop","price":999.99,"stock":10,"categoryId":"<category-id>"}'
+curl -X POST http://localhost:3000/products \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Laptop",
+    "price": 999.99,
+    "stock": 10,
+    "categoryId": "<category-id>"
+  }'
 ```
 
-## Comandos úteis
-
-Instalar dependências e gerar cliente Prisma:
+### Listar produtos com filtros
 
 ```bash
-npm install
-npx prisma generate
+curl "http://localhost:3000/products?page=1&limit=10&name=lap&priceMin=100&priceMax=2000"
 ```
 
-Rodar a aplicação localmente (assumindo `DATABASE_URL` configurada em `.env`):
+---
+
+## Scripts disponíveis
+
+Iniciar a aplicação em desenvolvimento:
 
 ```bash
-cp .env.example .env
-npx prisma migrate dev --name init
 npm run dev
 ```
 
-Rodar a stack completa com Docker (aplica migrations automaticamente):
+Compilar o projeto TypeScript:
 
 ```bash
-docker compose up --build
+npm run build
 ```
 
-Preparar banco de teste e aplicar migrations (usa `.env.test`):
+Iniciar a versão compilada:
 
 ```bash
-cp .env.test.example .env.test
-dotenv -e .env.test -- npx prisma migrate deploy
+npm start
 ```
 
-Executar testes de integração contra o banco de teste:
+Gerar Prisma Client:
 
 ```bash
-dotenv -e .env.test -- npm run test:integration
+npm run prisma:generate
 ```
 
-Observação: os scripts acima usam `dotenv-cli` para carregar `.env.test`; instale com `npm i -D dotenv-cli` se necessário.
+Aplicar migrations existentes:
+
+```bash
+npm run prisma:migrate
+```
+
+Criar/aplicar migrations em desenvolvimento:
+
+```bash
+npm run prisma:migrate:dev
+```
+
+Aplicar migrations no banco de teste:
+
+```bash
+npm run prisma:migrate:test
+```
+
+Executar testes de integração:
+
+```bash
+npm run test:integration
+```
+
+---
 
 ## Observações
-- O `.env` real nunca é commitado — só `.env.example` e `.env.test.example`.
-- Testes usam banco real, sem mocks, e nunca o mesmo banco de desenvolvimento.
+
+* O arquivo `.env` real não é commitado.
+* O arquivo `.env.test` real não é commitado.
+* Apenas `.env.example` e `.env.test.example` devem estar no repositório.
+* Os testes usam PostgreSQL real, sem mock do Prisma.
+* O banco de teste é separado do banco de desenvolvimento.
+* O projeto utiliza soft delete com `deletedAt`.
+
+```
